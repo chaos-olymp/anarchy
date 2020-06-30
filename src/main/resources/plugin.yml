@@ -1,0 +1,4 @@
+name: Anarchy
+version: "${version}"
+main: "de.chaosolymp.anarchy.AnarchyPlugin"
+author: "Robin Lindner"
