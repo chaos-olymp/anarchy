@@ -14,9 +14,12 @@ class TopCommandExecutor(private val plugin: AnarchyPlugin) : CommandExecutor {
             sender.sendMessage(
                 this.plugin.messageConfiguration.getMessage(
                     "command.top.element", arrayOf(
+                        Replacement("uuid", statistic.uuid.toString()),
                         Replacement("player", statistic.name),
                         Replacement("ranking", statistic.ranking),
-                        Replacement("kills", statistic.killCount)
+                        Replacement("kills", statistic.killCount),
+                        Replacement("deaths", statistic.deathCount),
+                        Replacement("joins", statistic.joinCount)
                     )
                 )
             )

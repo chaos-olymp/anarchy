@@ -1,21 +1,28 @@
 package de.chaosolymp.anarchy
 
 import de.chaosolymp.anarchy.config.Replacement
+import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import java.util.*
 
 class PlayerListener(private val plugin: AnarchyPlugin) : Listener {
 
+    val suicideList = mutableListOf<UUID>()
+
     @EventHandler
     fun handleJoin(event: PlayerJoinEvent) {
+        val player = event.player
+        this.plugin.databaseManager.insertIntoTableIfNotExists(player.uniqueId, player.name).get()
+        this.plugin.databaseManager.incrementJoins(player.uniqueId)
         event.joinMessage = this.plugin.messageConfiguration.getMessage("join", arrayOf(
             Replacement("player", event.player.name)
         ))
-        event.player.sendMessage(this.plugin.messageConfiguration.getMessage("greeting", emptyArray()))
+        player.sendMessage(this.plugin.messageConfiguration.getMessage("greeting", emptyArray()))
     }
 
     @EventHandler
@@ -27,6 +34,23 @@ class PlayerListener(private val plugin: AnarchyPlugin) : Listener {
 
     @EventHandler
     fun handleDeath(event: PlayerDeathEvent) {
+        if(this.suicideList.contains(event.entity.uniqueId)) {
+            for(player in this.plugin.server.onlinePlayers)  {
+                if(player.uniqueId == event.entity.uniqueId) {
+                    player.sendMessage(this.plugin.messageConfiguration.getMessage("death.suicide.personal", arrayOf(
+                        Replacement("player", player.name)
+                    )))
+                } else {
+                    player.sendMessage(this.plugin.messageConfiguration.getMessage("death.suicide", arrayOf(
+                        Replacement("player", player.name)
+                    )))
+                }
+            }
+            this.suicideList.remove(event.entity.uniqueId)
+            event.deathMessage = null
+            return
+        }
+
         when (event.entity.lastDamageCause?.cause) {
             EntityDamageEvent.DamageCause.SUICIDE -> event.deathMessage = this.plugin.messageConfiguration.getMessage("death.suicide", arrayOf(Replacement("player", event.entity.name)))
             EntityDamageEvent.DamageCause.FALL -> event.deathMessage = this.plugin.messageConfiguration.getMessage("death.fall-damage", arrayOf(Replacement("player", event.entity.name)))
@@ -56,8 +80,21 @@ class PlayerListener(private val plugin: AnarchyPlugin) : Listener {
             )
         }
 
-        event.entity.killer?.uniqueId?.let { this.plugin.databaseManager.incrementDeaths(it) }
+        event.entity.killer?.uniqueId?.let {
+            this.plugin.databaseManager.incrementKills(it).get()
+            val opt = this.plugin.databaseManager.getPlayerStatistic(it).get()
+            if(opt.isPresent) {
+                val statistic = opt.get()
+                if(statistic.killStreak > 0 && statistic.killStreak % this.plugin.pluginConfiguration.killStreakJump == 0) {
+                    Bukkit.broadcastMessage(this.plugin.messageConfiguration.getMessage("killstreak.global", arrayOf(
+                        Replacement("player", statistic.name),
+                        Replacement("streak", statistic.killStreak)
+                    )))
+                }
+            }
+        }
         this.plugin.databaseManager.incrementDeaths(event.entity.uniqueId)
+        this.plugin.databaseManager.resetKillStreak(event.entity.uniqueId)
     }
 
 }

@@ -5,8 +5,8 @@ import com.zaxxer.hikari.HikariDataSource
 import java.sql.Connection
 
 data class DatabaseConfiguration(val jdbcUrl: String, val userName: String, val password: String) {
-    val config: HikariConfig = HikariConfig();
-    val dataSource: HikariDataSource;
+    private val config: HikariConfig = HikariConfig();
+    val dataSource: HikariDataSource
 
     init {
         this.config.jdbcUrl = jdbcUrl

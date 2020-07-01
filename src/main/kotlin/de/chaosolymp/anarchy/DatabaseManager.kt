@@ -11,7 +11,7 @@ class DatabaseManager(plugin: AnarchyPlugin) {
 
     fun createTable(): Future<*> {
         val task = Runnable {
-            val statement = this.dataSource.connection.prepareStatement("CREATE TABLE IF NOT EXISTS `statistics` (`uuid` BINARY(16) NOT NULL, `name` VARCHAR(16), `joinCount` INT DEFAULT 0, `deathCount` INT DEFAULT 0, `killCount` INT DEFAULT 0, `killStreak` INT DEFAULT 0, PRIMARY KEY (`uuid`))")
+            val statement = this.dataSource.connection.prepareStatement("CREATE TABLE IF NOT EXISTS `statistics` (`uuid` BINARY(16) NOT NULL, `name` VARCHAR(16), `join_count` INT DEFAULT 0, `death_count` INT DEFAULT 0, `kill_count` INT DEFAULT 0, `kill_streak` INT DEFAULT 0, PRIMARY KEY (`uuid`))")
             statement.execute()
         }
         return executor.submit(task)
@@ -20,10 +20,8 @@ class DatabaseManager(plugin: AnarchyPlugin) {
     fun insertIntoTableIfNotExists(uuid: UUID, name: String): Future<*> {
         val task = FutureTask<Void?>(Runnable {
             val statement = this.dataSource.connection.prepareStatement("REPLACE INTO `statistics` (`uuid`, `name`) VALUES (?, ?)")
-
             statement.setBytes(1, UUIDUtils.getBytesFromUUID(uuid))
             statement.setString(2, name)
-
             statement.execute()
         }, null)
         return executor.submit(task)
@@ -31,17 +29,17 @@ class DatabaseManager(plugin: AnarchyPlugin) {
 
     fun getPlayerStatistic(uuid: UUID): Future<Optional<PlayerStatistic>> {
         val task = Callable {
-            val statement = this.dataSource.connection.prepareStatement("SELECT name, joinCount, deathCount, killCount, killStreak, RANK() OVER (ORDER BY `killCount`) ranking FROM statistics WHERE uuid = ?")
+            val statement = this.dataSource.connection.prepareStatement("SELECT name, join_count, death_count, kill_count, kill_streak, RANK() OVER (ORDER BY `kill_count`) ranking FROM statistics WHERE uuid = ?")
             statement.setBytes(1, UUIDUtils.getBytesFromUUID(uuid))
 
             val rs = statement.executeQuery();
             val opt: Optional<PlayerStatistic>
             opt = if(rs.next()) {
                 val name = rs.getString("name")
-                val joinCount = rs.getInt("joinCount")
-                val deathCount = rs.getInt("deathCount")
-                val killCount = rs.getInt("killCount")
-                val killStreak = rs.getInt("killStreak")
+                val joinCount = rs.getInt("join_count")
+                val deathCount = rs.getInt("death_count")
+                val killCount = rs.getInt("kill_count")
+                val killStreak = rs.getInt("kill_streak")
                 val ranking = rs.getInt("ranking")
                 Optional.of(PlayerStatistic(uuid, name, killCount, deathCount, joinCount, killStreak, ranking))
             } else {
@@ -55,7 +53,7 @@ class DatabaseManager(plugin: AnarchyPlugin) {
     }
     fun getTopKillers(count: Int): Future<Collection<PlayerStatistic>> {
         val task = Callable<Collection<PlayerStatistic>> {
-            val statement = this.dataSource.connection.prepareStatement("SELECT uuid, name, joinCount, deathCount, killCount, killStreak FROM statistics ORDER BY `killCount` DESC LIMIT ?")
+            val statement = this.dataSource.connection.prepareStatement("SELECT uuid, name, join_count, death_count, kill_count, kill_streak FROM statistics ORDER BY `kill_count` DESC LIMIT ?")
             statement.setInt(1, count)
             val rs = statement.executeQuery()
             val list = mutableListOf<PlayerStatistic>()
@@ -63,10 +61,10 @@ class DatabaseManager(plugin: AnarchyPlugin) {
             while(rs.next()) {
                 val uuid = UUIDUtils.getUUIDFromBytes(rs.getBytes("uuid"));
                 val name = rs.getString("name")
-                val joinCount = rs.getInt("joinCount")
-                val deathCount = rs.getInt("deathCount")
-                val killCount = rs.getInt("killCount")
-                val killStreak = rs.getInt("killStreak")
+                val joinCount = rs.getInt("join_count")
+                val deathCount = rs.getInt("death_count")
+                val killCount = rs.getInt("kill_count")
+                val killStreak = rs.getInt("kill_streak")
                 list.add(PlayerStatistic(uuid, name, killCount, deathCount, joinCount, killStreak, rank))
                 rank++
             }
@@ -77,9 +75,8 @@ class DatabaseManager(plugin: AnarchyPlugin) {
 
     fun incrementDeaths(uuid: UUID): Future<*> {
         val task = Runnable {
-            val statement = this.dataSource.connection.prepareStatement("UPDATE statistics SET deathCount = deathCount + 1 WHERE uuid = ?")
+            val statement = this.dataSource.connection.prepareStatement("UPDATE statistics SET death_count = death_count + 1 WHERE uuid = ?")
             statement.setBytes(1, UUIDUtils.getBytesFromUUID(uuid))
-
             statement.execute()
         }
         return executor.submit(task)
@@ -87,9 +84,8 @@ class DatabaseManager(plugin: AnarchyPlugin) {
 
     fun incrementKills(uuid: UUID): Future<*> {
         val task = Runnable {
-            val statement = this.dataSource.connection.prepareStatement("UPDATE statistics SET killCount = killCount + 1, killStreak = killStreak + 1 WHERE uuid = ?")
+            val statement = this.dataSource.connection.prepareStatement("UPDATE statistics SET kill_count = kill_count + 1, kill_streak = kill_streak + 1 WHERE uuid = ?")
             statement.setBytes(1, UUIDUtils.getBytesFromUUID(uuid))
-
             statement.execute()
         }
         return executor.submit(task)
@@ -97,9 +93,8 @@ class DatabaseManager(plugin: AnarchyPlugin) {
 
     fun incrementJoins(uuid: UUID): Future<*> {
         val task = Runnable {
-            val statement = this.dataSource.connection.prepareStatement("UPDATE statistics SET joinCount = joinCount + 1 WHERE uuid = ?")
+            val statement = this.dataSource.connection.prepareStatement("UPDATE statistics SET join_count = join_count + 1 WHERE uuid = ?")
             statement.setBytes(1, UUIDUtils.getBytesFromUUID(uuid))
-
             statement.execute()
         }
         return executor.submit(task)
@@ -107,9 +102,8 @@ class DatabaseManager(plugin: AnarchyPlugin) {
 
     fun resetKillStreak(uuid: UUID): Future<*> {
         val task = Runnable {
-            val statement = this.dataSource.connection.prepareStatement("UPDATE statistics SET killStreak = 0 WHERE uuid = ?")
+            val statement = this.dataSource.connection.prepareStatement("UPDATE statistics SET kill_streak = 0 WHERE uuid = ?")
             statement.setBytes(1, UUIDUtils.getBytesFromUUID(uuid))
-
             statement.execute()
         }
         return executor.submit(task)

@@ -1,37 +1,31 @@
 package de.chaosolymp.anarchy.command
 
 import de.chaosolymp.anarchy.AnarchyPlugin
-import de.chaosolymp.anarchy.PlayerStatistic
 import de.chaosolymp.anarchy.config.Replacement
 import org.bukkit.OfflinePlayer
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
-import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import java.util.*
 
 class StatsCommandExecutor(private val plugin: AnarchyPlugin) : CommandExecutor, TabCompleter {
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         val target: UUID
-        val targetName: String
-        if (args.size == 1) {
+        target = if (args.size == 1) {
             val player = this.plugin.server.getPlayerExact(args[0])
             if (player != null) {
-                target = player.uniqueId
-                targetName = args[0]
+                sender.sendMessage(this.plugin.messageConfiguration.getMessage("error.player-not-found", emptyArray()))
+                player.uniqueId
             } else {
                 return true
             }
         } else {
             if (sender is Player) {
-                target = sender.uniqueId;
-                targetName = sender.name
+                sender.uniqueId;
             } else {
-
                 sender.sendMessage(this.plugin.messageConfiguration.getMessage("error.not-a-player", emptyArray()))
-
                 return true
             }
         }
@@ -43,10 +37,13 @@ class StatsCommandExecutor(private val plugin: AnarchyPlugin) : CommandExecutor,
             sender.sendMessage(
                 this.plugin.messageConfiguration.getMessage(
                     "command.stats", arrayOf(
-                        Replacement("player", targetName),
+                        Replacement("player", statistic.name),
+                        Replacement("uuid", target.toString()),
                         Replacement("ranking", statistic.ranking),
+                        Replacement("killStreaks", statistic.killStreak),
                         Replacement("kills", statistic.killCount),
                         Replacement("deaths", statistic.deathCount),
+                        Replacement("joins", statistic.joinCount),
                         Replacement("kd", statistic.getKD())
                     )
                 )

@@ -1,4 +1,15 @@
 name: Anarchy
 version: "${version}"
 main: "de.chaosolymp.anarchy.AnarchyPlugin"
+description: "The official anarchy plugin of ChaosOlymp.DE"
 author: "Robin Lindner"
+
+commands:
+  "stats":
+    description: "Shows your statistics"
+  "top":
+    description: "Shows the top 10 killers"
+  "suicide":
+    description: "Suicide!"
+  "help":
+    description: "Help"
