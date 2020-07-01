@@ -16,9 +16,9 @@ class StatsCommandExecutor(private val plugin: AnarchyPlugin) : CommandExecutor,
         target = if (args.size == 1) {
             val player = this.plugin.server.getPlayerExact(args[0])
             if (player != null) {
-                sender.sendMessage(this.plugin.messageConfiguration.getMessage("error.player-not-found", emptyArray()))
                 player.uniqueId
             } else {
+                sender.sendMessage(this.plugin.messageConfiguration.getMessage("error.player-not-found", emptyArray()))
                 return true
             }
         } else {
@@ -30,26 +30,26 @@ class StatsCommandExecutor(private val plugin: AnarchyPlugin) : CommandExecutor,
             }
         }
 
-        val opt = this.plugin.databaseManager.getPlayerStatistic(target).get()
-
-        if (opt.isPresent) {
-            val statistic = opt.get()
-            sender.sendMessage(
-                this.plugin.messageConfiguration.getMessage(
-                    "command.stats", arrayOf(
-                        Replacement("player", statistic.name),
-                        Replacement("uuid", target.toString()),
-                        Replacement("ranking", statistic.ranking),
-                        Replacement("killStreaks", statistic.killStreak),
-                        Replacement("kills", statistic.killCount),
-                        Replacement("deaths", statistic.deathCount),
-                        Replacement("joins", statistic.joinCount),
-                        Replacement("kd", statistic.getKD())
+        val opt = this.plugin.databaseManager.getPlayerStatistic(target).thenAccept {
+            if (it.isPresent) {
+                val statistic = it.get()
+                sender.sendMessage(
+                    this.plugin.messageConfiguration.getMessage(
+                        "command.stats", arrayOf(
+                            Replacement("player", statistic.name),
+                            Replacement("uuid", target.toString()),
+                            Replacement("ranking", statistic.ranking),
+                            Replacement("killStreaks", statistic.killStreak),
+                            Replacement("kills", statistic.killCount),
+                            Replacement("deaths", statistic.deathCount),
+                            Replacement("joins", statistic.joinCount),
+                            Replacement("kd", statistic.getKD())
+                        )
                     )
                 )
-            )
-        } else {
-            sender.sendMessage(this.plugin.messageConfiguration.getMessage("error.no-stats", emptyArray()))
+            } else {
+                sender.sendMessage(this.plugin.messageConfiguration.getMessage("error.no-stats", emptyArray()))
+            }
         }
 
         return true

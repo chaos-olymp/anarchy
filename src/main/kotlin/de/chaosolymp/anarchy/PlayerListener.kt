@@ -17,8 +17,10 @@ class PlayerListener(private val plugin: AnarchyPlugin) : Listener {
     @EventHandler
     fun handleJoin(event: PlayerJoinEvent) {
         val player = event.player
-        this.plugin.databaseManager.insertIntoTableIfNotExists(player.uniqueId, player.name).get()
-        this.plugin.databaseManager.incrementJoins(player.uniqueId)
+        this.plugin.databaseManager.insertIntoTableIfNotExists(player.uniqueId, player.name).thenAccept {
+            this.plugin.databaseManager.incrementJoins(player.uniqueId)
+        }
+
         event.joinMessage = this.plugin.messageConfiguration.getMessage("join", arrayOf(
             Replacement("player", event.player.name)
         ))
@@ -80,21 +82,27 @@ class PlayerListener(private val plugin: AnarchyPlugin) : Listener {
             )
         }
 
-        event.entity.killer?.uniqueId?.let {
-            this.plugin.databaseManager.incrementKills(it).get()
-            val opt = this.plugin.databaseManager.getPlayerStatistic(it).get()
-            if(opt.isPresent) {
-                val statistic = opt.get()
-                if(statistic.killStreak > 0 && statistic.killStreak % this.plugin.pluginConfiguration.killStreakJump == 0) {
-                    Bukkit.broadcastMessage(this.plugin.messageConfiguration.getMessage("killstreak.global", arrayOf(
-                        Replacement("player", statistic.name),
-                        Replacement("streak", statistic.killStreak)
-                    )))
+        event.entity.killer?.uniqueId?.let { it ->
+            this.plugin.databaseManager.incrementKills(it).thenAccept {_ ->
+                this.plugin.databaseManager.getPlayerStatistic(it).thenAccept {it2 ->
+                    if(it2.isPresent) {
+                        val statistic = it2.get()
+                        if(statistic.killStreak > 0 && statistic.killStreak % this.plugin.pluginConfiguration.killStreakJump == 0) {
+                            Bukkit.broadcastMessage(this.plugin.messageConfiguration.getMessage("killstreak.global", arrayOf(
+                                Replacement("player", statistic.name),
+                                Replacement("streak", statistic.killStreak)
+                            )))
+                        }
+                    }
                 }
+
             }
+
         }
-        this.plugin.databaseManager.incrementDeaths(event.entity.uniqueId)
-        this.plugin.databaseManager.resetKillStreak(event.entity.uniqueId)
+        this.plugin.databaseManager.incrementDeaths(event.entity.uniqueId).thenAccept {
+            this.plugin.databaseManager.resetKillStreak(event.entity.uniqueId)
+        }
+
     }
 
 }

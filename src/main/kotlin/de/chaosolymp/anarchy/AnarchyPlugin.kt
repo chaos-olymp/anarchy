@@ -11,6 +11,8 @@ import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.plugin.java.JavaPlugin
 import sun.plugin2.main.server.Plugin
 import java.io.File
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class AnarchyPlugin : JavaPlugin() {
 
@@ -19,13 +21,15 @@ class AnarchyPlugin : JavaPlugin() {
     lateinit var messageConfiguration: MessageConfiguration
     lateinit var databaseManager: DatabaseManager
     lateinit var databaseConfig: DatabaseConfiguration
+    lateinit var executorService: ExecutorService
 
     override fun onEnable() {
         val startTime = System.currentTimeMillis()
         this.initPluginConfig()
         this.initDatabaseConfig()
         this.initMessageConfig()
-        this.databaseManager = DatabaseManager(this)
+        this.executorService = Executors.newSingleThreadExecutor()
+        this.databaseManager = DatabaseManager(this, executorService)
         this.databaseManager.createTable()
         this.getCommand("suicide")?.setExecutor(SuicideCommandExecutor(this))
         this.getCommand("stats")?.setExecutor(StatsCommandExecutor(this))
@@ -34,6 +38,10 @@ class AnarchyPlugin : JavaPlugin() {
         this.playerListener = PlayerListener(this)
         this.server.pluginManager.registerEvents(this.playerListener, this)
         this.logger.info(String.format("Plugin warmup finished (Took %dms)", System.currentTimeMillis() - startTime))
+    }
+
+    override fun onDisable() {
+        this.executorService.shutdown()
     }
 
     private fun initMessageConfig() {
