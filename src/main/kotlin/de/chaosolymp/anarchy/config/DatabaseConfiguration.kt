@@ -2,7 +2,6 @@ package de.chaosolymp.anarchy.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import java.sql.Connection
 
 data class DatabaseConfiguration(val jdbcUrl: String, val userName: String, val password: String) {
     private val config: HikariConfig = HikariConfig();
